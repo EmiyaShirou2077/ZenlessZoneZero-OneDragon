@@ -42,6 +42,25 @@ class GodFingerApp(ZApplication):
         """
         pass
     
+    # @operation_node(name='传送', is_start_node=True)
+    # def tp(self) -> OperationRoundResult:
+    #     op = Transport(self.ctx, '六分街', '电玩店')
+    #     return self.round_by_op_result(op.execute())
+    
+    # @node_from(from_name='传送')
+    @operation_node(name="按下W键", is_start_node=True)
+    def press_w_key(self) -> OperationRoundResult:
+        self.ctx.controller.move_w(press=True, press_time=0.1, release=True)
+        time.sleep(0.5)
+        return self.round_success()
+    
+    @node_from(from_name='按下W键')
+    @operation_node(name="按下A键")
+    def press_a_key(self) -> OperationRoundResult:
+        self.ctx.controller.move_a(press=True, press_time=0.1, release=True)
+        time.sleep(0.5)
+
+        return self.round_success()
 
 
 
