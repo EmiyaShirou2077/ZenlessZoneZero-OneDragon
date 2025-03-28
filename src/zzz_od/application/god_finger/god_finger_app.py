@@ -23,7 +23,13 @@ from zzz_od.operation.transport import Transport
 from one_dragon.base.operation.context_event_bus import ContextEventItem
 from one_dragon.base.operation.one_dragon_context import ContextKeyboardEventEnum
 
+from zzz_od.application.god_finger.env import GreedySnakeEnv
+from zzz_od.application.god_finger.agent import CNNQNetwork
+from one_dragon.base.controller.pc_button.pc_button_controller import PcButtonController
+import pytesseract
 
+import numpy as np
+import cv2
 
 
 class GodFingerApp(ZApplication):
@@ -48,21 +54,33 @@ class GodFingerApp(ZApplication):
     #     return self.round_by_op_result(op.execute())
     
     # @node_from(from_name='传送')
-    @operation_node(name="按下W键", is_start_node=True)
-    def press_w_key(self) -> OperationRoundResult:
-        self.ctx.controller.move_w(press=True, press_time=0.1, release=True)
-        time.sleep(0.5)
-        return self.round_success()
-    
-    @node_from(from_name='按下W键')
-    @operation_node(name="按下A键")
-    def press_a_key(self) -> OperationRoundResult:
-        self.ctx.controller.move_a(press=True, press_time=0.1, release=True)
-        time.sleep(0.5)
+    # @operation_node(name="按键", is_start_node=True)
+    # def press_w_key(self) -> OperationRoundResult:
+    #     self.ctx.controller.move_w(press=True, press_time=0.1, release=True)
+    #     time.sleep(0.5)
+    #     self.ctx.controller.move_d(press=True, press_time=0.1, release=True)
+    #     time.sleep(0.5)
+    #     self.ctx.controller.move_w(press=True, press_time=0.1, release=True)
+        # return self.round_success()
+
+    @operation_node(name='训练AI', is_start_node=True)
+    def train(self) -> OperationRoundResult:
+        ACTION_SPACE = ['w', 'a', 's', 'd', 'j']
+        time.sleep(1)
+
+        img = self.screenshot()
+        cv2.imwrite("debug_fullscreen.png", img)
+        env = GreedySnakeEnv(self)
+
+        obs = env.reset()
+        for _ in range(20):
+            action = np.random.choice(ACTION_SPACE)
+            obs, reward, done, _ = env.step(action)
+            if done:
+                obs = env.reset()
+                time.sleep(1)
 
         return self.round_success()
-
-
 
 
 def __debug():
