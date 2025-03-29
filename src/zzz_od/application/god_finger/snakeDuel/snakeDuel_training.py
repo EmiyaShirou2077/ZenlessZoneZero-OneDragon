@@ -14,10 +14,11 @@ from zzz_od.context.zzz_context import ZContext
 from one_dragon.utils import debug_utils, cv2_utils
 import time
 import numpy as np
+from one_dragon.utils.log_utils import log
 
 class ArcadeSnakeDuelTraining(ZApplication):
 
-    def __init__(self, ctx: ZContext, total_episodes: int):
+    def __init__(self, ctx: ZContext, env, total_episodes: int):
         """
         蛇对蛇训练
         :param ctx:
@@ -30,7 +31,7 @@ class ArcadeSnakeDuelTraining(ZApplication):
         self.total_episodes: int = total_episodes # 所需的训练次数
         self.finish_episodes: int = 0  # 完成的训练次数
 
-        self.env = SnakeDuelEnv(self)  # 蛇对蛇环境
+        self.env = env
 
     def handle_init(self):
         self.finish_episodes: int = 0  # 完成次数
@@ -58,49 +59,30 @@ class ArcadeSnakeDuelTraining(ZApplication):
         return self.round_by_find_area(screen, '电玩店-蛇对蛇', '游戏开始', retry_wait=1)
     
     @node_from(from_name='游戏开始')
-    @node_from(from_name='检查游戏是否结束', status='游戏未结束')
     @operation_node(name='训练金手指')
     def train_agent(self) -> OperationRoundResult:
-        # self.env.reset()
-        # flag_game_over = False
-        # state = self.env.get_state()
-        # action = self.env.action_space.sample()
+        ACTION_SPACE = ['w', 'a', 's', 'd', 'j', None]
+        state, game_over_flag = self.env.reset()
 
-        # # TODO: 加入agent
-        # # action = self.agent.get_action(state)
-        # while not flag_game_over:
-        #     state, reward, flag_game_over = self.env.step(action)
 
-        #     if flag_game_over:
-        #         break
-        ACTION_SPACE = ['w', 'a', 's', 'd', 'j', 'none']
-        action = np.random.choice(ACTION_SPACE)
-        if action == 'none':
-            time.sleep(0.1)
+        while game_over_flag is False:
+            # TODO: 加入agent
+            # action = self.agent.get_action(state)
+            action = np.random.choice(ACTION_SPACE)
+
+            state, reward, game_over_flag = self.env.step(action)
+
+            # Show training info
+            action_str = f"{action:>4}" if action is not None else "None"
+            log.info(f"Episode: {self.finish_episodes}, Action: {action_str}, Game Over: {str(game_over_flag):>5}, Reward: {reward}")
+
+        self.finish_episodes += 1
+        if self.finish_episodes >= self.total_episodes:
+            return self.round_success(status='训练完成', wait=1)
         else:
-            self.ctx.controller.keyboard_controller.press(action, press_time=0.1)
-
-        # self.finish_episodes += 1
-
-
-        return self.round_success()
-    
-    @node_from(from_name='训练金手指')
-    @operation_node(name='检查游戏是否结束')
-    def check_game_over(self) -> OperationRoundResult:
-        screen = self.screenshot()
-        game_over_flag = self.round_by_find_area(screen, '电玩店-蛇对蛇', '游戏结束').is_success
-        print(game_over_flag)
-        if game_over_flag:
-            self.finish_episodes += 1
-            if self.finish_episodes >= self.total_episodes:
-                return self.round_success(status='游戏结束-训练完成', wait=1)
-            else:
-                return self.round_success(status='游戏结束-训练继续', wait=1)
-        else:
-            return self.round_success(status='游戏未结束')
+            return self.round_success(status='训练继续', wait=1)
         
-    @node_from(from_name='检查游戏是否结束', status='游戏结束-训练继续')
+    @node_from(from_name='训练金手指', status='训练继续')
     @operation_node(name='点击再次挑战', node_max_retry_times=20)
     def click_play_again(self) -> OperationRoundResult:
         screen = self.screenshot()
@@ -108,7 +90,7 @@ class ArcadeSnakeDuelTraining(ZApplication):
                                                    success_wait=1, retry_wait=1)
         return result
         
-    @node_from(from_name='检查游戏是否结束', status='游戏结束-训练完成')
+    @node_from(from_name='训练金手指', status='训练完成')
     @operation_node(name='点击返回', node_max_retry_times=20)
     def click_back(self) -> OperationRoundResult:
         screen = self.screenshot()
@@ -121,7 +103,11 @@ def _debug():
     ctx = ZContext()
     ctx.init_by_config()
 
-    app = ArcadeSnakeDuelTraining(ctx, total_episodes=3)
+    # env_ctx = ZContext()
+    # env_ctx.init_by_config()
+    # env = SnakeDuelEnv(env_ctx)
+    env = SnakeDuelEnv(ctx)
+    app = ArcadeSnakeDuelTraining(ctx, env, total_episodes=1)
     app.execute()
 
 if __name__ == '__main__':

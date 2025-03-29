@@ -19,11 +19,11 @@ area_list:
 - area_name: 游戏结束
   id_mark: false
   pc_rect:
-  - 1678
-  - 996
-  - 1762
-  - 1024
-  text: 再次挑战
+  - 496
+  - 46
+  - 548
+  - 116
+  text: '5'
   lcs_percent: 0.5
   template_sub_dir: ''
   template_id: ''
