@@ -8,12 +8,6 @@ from zzz_od.context.zzz_context import ZContext
 from one_dragon.base.operation.operation_round_result import OperationRoundResult
 from one_dragon.utils.i18_utils import gt
 
-
-
-
-
-
-
 class SnakeDuelEnv(ZApplication):
     def __init__(self, ctx: ZContext):
         """
@@ -34,22 +28,25 @@ class SnakeDuelEnv(ZApplication):
     def step(self, action):
         if action is None:
             time.sleep(0.1)
+            cost = 0
         else:
             self.press_key(action)
-        time.sleep(0.2)
+            cost = 0
+        # time.sleep(0.2)
 
         screen = self.screenshot()
+        state = self.get_state(screen)
+
         # check if game over
         game_over_flag = self.check_game_over(screen)
         if game_over_flag:
-            return None, -999999999, game_over_flag
+            return state, -999999999-cost, game_over_flag
         else:
             # print('game_over_flag', game_over_flag)
-            state = self.get_state(screen)
             score = self.get_score(screen)
             reward = self.get_reward(score)
             self.last_score = score
-            return state, reward, game_over_flag
+            return state, reward-cost, game_over_flag
 
     def press_key(self, key: str):
         self.ctx.controller.btn_controller.press(key, press_time=0.1)
@@ -60,11 +57,15 @@ class SnakeDuelEnv(ZApplication):
         '''
         area = self.ctx.screen_loader.get_area('电玩店-蛇对蛇', '分数')
         score_img = cv2_utils.crop_image_only(screen, area.rect)
+        threshold_value = 180  # you can tune this
+        _, score_img = cv2.threshold(score_img, threshold_value, 255, cv2.THRESH_BINARY)
+
         score_str = self.ctx.ocr.run_ocr_single_line(score_img)
         # print(score_str)
-        if score_str == '':
-            cv2.imwrite('score.png', screen)
+        # if score_str == '':
+        #     cv2.imwrite('score.png', screen)
         score = int(score_str.replace(' ', ''))
+        # print('score', score)
         return score
 
     def get_state(self, screen):
